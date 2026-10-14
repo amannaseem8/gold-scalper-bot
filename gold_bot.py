@@ -56,9 +56,9 @@ def send_telegram_alert(message_text: str):
     except Exception as e:
         log.error(f"Failed to dispatch Telegram message: {e}")
 
-# Send startup alert to confirm connection
+# Startup Notification
 try:
-    send_telegram_alert("🚀 *Gold Megabrain Bot is now ONLINE 24/7!*\nMonitoring Asian Range Sweeps & Killzone FVGs...")
+    send_telegram_alert("Gold Megabrain Bot is now ONLINE 24/7. Monitoring Asian Range Sweeps and Killzone FVGs.")
 except Exception:
     pass
 
@@ -110,7 +110,7 @@ def scan_for_institutional_setup():
     
     session_name = "LONDON KILLZONE" if in_london else ("NEW YORK KILLZONE" if in_ny else None)
     if not session_name:
-        log.info(f"Outside institutional killzones (Current UTC: {hour:02d}:{minute:02d}). Standing down.")
+        log.info(f"Outside killzones. Current UTC: {hour:02d}:{minute:02d}. Standing down.")
         return None
 
     df = fetch_candles()
@@ -147,7 +147,7 @@ def scan_for_institutional_setup():
                         "asian_high": asian_high,
                         "asian_low": asian_low,
                         "sweep_extreme": min_recent_low,
-                        "fvg_zone": f"${c1_high:.2f} -${c3_low:.2f}",
+                        "fvg_zone": f"${c1_high:.2f} to ${c3_low:.2f}",
                         "entry_ce": entry_ce,
                         "stop_loss": stop_loss,
                         "sl_pips": sl_pips,
@@ -179,7 +179,7 @@ def scan_for_institutional_setup():
                         "asian_high": asian_high,
                         "asian_low": asian_low,
                         "sweep_extreme": max_recent_high,
-                        "fvg_zone": f"${c3_high:.2f} -${c1_low:.2f}",
+                        "fvg_zone": f"${c3_high:.2f} to ${c1_low:.2f}",
                         "entry_ce": entry_ce,
                         "stop_loss": stop_loss,
                         "sl_pips": sl_pips,
@@ -188,7 +188,7 @@ def scan_for_institutional_setup():
                         "atr": atr
                     }
 
-    log.info(f"No sweep confirmed yet. Asian High: ${asian_high} | Asian Low: ${asian_low} \vert{} Gold:${cur_price}")
+    log.info(f"No sweep confirmed yet. Asian High: ${asian_high} , Asian Low: ${asian_low} , Current Gold: ${cur_price}")
     return None
 
 # --- 6. Megabrain AI Verification (The Judge) ---
@@ -199,19 +199,19 @@ def verify_setup_with_megabrain(setup: dict) -> dict:
 A mathematical SMC setup has triggered:
 - Direction: {setup['direction']}
 - Session: {setup['session']}
-- Asian High: ${setup['asian_high']} \vert{} Asian Low:${setup['asian_low']}
+- Asian High: ${setup['asian_high']} , Asian Low: ${setup['asian_low']}
 - Liquidity Sweep Extreme: ${setup['sweep_extreme']}
 - FVG Zone: {setup['fvg_zone']} (50% CE Entry: ${setup['entry_ce']})
 - Proposed Stop Loss: ${setup['stop_loss']} ({setup['sl_pips']} pips)
-- Take Profit 1: ${setup['tp1']} \vert{} TP2:${setup['tp2']}
+- Take Profit 1: ${setup['tp1']} , TP2: ${setup['tp2']}
 
 Evaluate trap risk and give a conviction score.
 Output strictly in this JSON format:
 {{
-  "approved": <true|false>,
-  "conviction": <integer 0 to 100>,
-  "trap_risk": <integer 0 to 100>,
-  "reasoning": "<short 1-sentence verdict>"
+  "approved": true,
+  "conviction": 85,
+  "trap_risk": 15,
+  "reasoning": "Clear liquidity sweep and valid FVG"
 }}
 Rule: If conviction is below 75 or trap_risk > 35, approved must be false.
 """
@@ -231,29 +231,29 @@ Rule: If conviction is below 75 or trap_risk > 35, approved must be false.
 
 # --- 7. Telegram Formatter ---
 def dispatch_signal_alert(setup: dict, ai_eval: dict):
-    direction_emoji = "🟢 STRONG BUY" if setup["direction"] == "BUY" else "🔴 STRONG SELL"
+    direction_tag = "STRONG BUY" if setup["direction"] == "BUY" else "STRONG SELL"
     
     msg = f"""
-⚡ *INSTITUTIONAL GOLD SCALP SIGNAL (XAU/USD)* ⚡
-━━━━━━━━━━━━━━━━━━━━━━━━━
-*Action:* {direction_emoji}
-*Session:* `{setup['session']}`
-*Conviction Score:* `{ai_eval.get('conviction', 85)}% (Approved)`
+INSTITUTIONAL GOLD SCALP SIGNAL (XAU/USD)
+=========================================
+Action: {direction_tag}
+Session: {setup['session']}
+Conviction Score: {ai_eval.get('conviction', 85)}% (Approved)
 
-🎯 *EXECUTION PARAMETERS:*
-• *Optimal Entry Zone:* `${setup['entry_ce']}` _(50% FVG Retest)_
-• *Stop Loss (SL):* `${setup['stop_loss']}` _({setup['sl_pips']} pips buffer)_
-• *Take Profit 1:* `${setup['tp1']}` _(Bank 70% & Move SL to BE)_
-• *Take Profit 2 (Runner):* `${setup['tp2']}` _(Opposing Liquidity Pool)_
+EXECUTION PARAMETERS:
+- Optimal Entry Zone: ${setup['entry_ce']} (50% FVG Retest)
+- Stop Loss (SL): ${setup['stop_loss']} ({setup['sl_pips']} pips buffer)
+- Take Profit 1: ${setup['tp1']} (Bank 70% and Move SL to BE)
+- Take Profit 2 (Runner): ${setup['tp2']} (Asian Liquidity Target)
 
-🔬 *CONFLUENCE AUDIT:*
-• *Liquidity Sweep:* Extreme at `${setup['sweep_extreme']}`
-• *Asian Range:* `${setup['asian_low']}` – `${setup['asian_high']}`
-• *Fair Value Gap:* `{setup['fvg_zone']}`
-• *Megabrain Note:* _{ai_eval.get('reasoning', 'Pristine SMC liquidity sweep confirmed')}_
+CONFLUENCE AUDIT:
+- Liquidity Sweep: Extreme at ${setup['sweep_extreme']}
+- Asian Range: ${setup['asian_low']} to ${setup['asian_high']}
+- Fair Value Gap: {setup['fvg_zone']}
+- Megabrain Note: {ai_eval.get('reasoning', 'Pristine SMC liquidity sweep confirmed')}
 
-⚠️ *Risk Management:* Risk strictly 1.0% of capital. Move SL to Entry immediately once TP1 is triggered.
-━━━━━━━━━━━━━━━━━━━━━━━━━
+Risk Management: Risk strictly 1.0% of capital. Move SL to Entry immediately once TP1 is triggered.
+=========================================
 """
     send_telegram_alert(msg)
 
@@ -273,7 +273,7 @@ def run_health_server():
 
 # --- 9. Master 24/7 Execution Loop ---
 def run_autonomous_bot():
-    log.info("🚀 24/7 Gold Megabrain Scalping Bot initialized.")
+    log.info("24/7 Gold Megabrain Scalping Bot initialized.")
     log.info("Monitoring Asian Range Sweeps and Killzone FVGs...")
     
     t = threading.Thread(target=run_health_server, daemon=True)
@@ -285,15 +285,15 @@ def run_autonomous_bot():
             if setup:
                 setup_id = setup["id"]
                 if setup_id not in alerted_setups:
-                    log.info(f"✨ Institutional Setup Detected: {setup_id}. Verifying with Megabrain...")
+                    log.info(f"Institutional Setup Detected: {setup_id}. Verifying with Megabrain...")
                     ai_verdict = verify_setup_with_megabrain(setup)
                     
                     if ai_verdict.get("approved", False) and ai_verdict.get("conviction", 0) >= 75:
-                        log.info(f"✅ Approved with {ai_verdict.get('conviction')}% conviction. Dispatching to Telegram!")
+                        log.info(f"Approved with {ai_verdict.get('conviction')}% conviction. Dispatching to Telegram!")
                         dispatch_signal_alert(setup, ai_verdict)
                         alerted_setups.add(setup_id)
                     else:
-                        log.warning(f"❌ Rejected by Megabrain: Trap risk={ai_verdict.get('trap_risk')}%, Conviction={ai_verdict.get('conviction')}%")
+                        log.warning(f"Rejected by Megabrain: Trap risk={ai_verdict.get('trap_risk')}%, Conviction={ai_verdict.get('conviction')}%")
             
         except Exception as e:
             log.error(f"Cycle encountered exception: {e}")
