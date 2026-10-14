@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("GoldBot24x7")
 
-# --- 2. Credentials Configuration (Pre-configured) ---
+# --- 2. Credentials Configuration ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8603242513:AAGUS5SPceAaJe5HpoH6GWqhSstjXLz39NY")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "6806057574")
@@ -55,6 +55,12 @@ def send_telegram_alert(message_text: str):
             log.error(f"Telegram API returned status {r.status_code}: {r.text}")
     except Exception as e:
         log.error(f"Failed to dispatch Telegram message: {e}")
+
+# Send startup alert to confirm connection
+try:
+    send_telegram_alert("🚀 *Gold Megabrain Bot is now ONLINE 24/7!*\nMonitoring Asian Range Sweeps & Killzone FVGs...")
+except Exception:
+    pass
 
 # --- 4. Market & Asian Range Engine ---
 def fetch_candles():
